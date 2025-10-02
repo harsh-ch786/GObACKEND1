@@ -27,10 +27,11 @@ WORKDIR /app
 COPY --from=builder /app/udhaar-server ./
 
 # Optional: don't copy .env in production
-COPY .env .env
+# COPY .env .env
 
 USER appuser
 EXPOSE 8080
 EXPOSE 9090
+
 
 CMD ["./udhaar-server"]
