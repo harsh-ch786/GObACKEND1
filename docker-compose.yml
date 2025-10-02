@@ -5,16 +5,14 @@ services:
     build: .
     container_name: udhaar-app
     ports:
-      - "8080:8080"
-      - "9090:9090"
+      - "8080:8080"   # app
     environment:
       MONGO_URI: "mongodb+srv://harsh240103263_db_user:1234@cluster0.l9fznpb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-      REDIS_ADDR: "redis:6379"
+      REDIS_ADDR: "redis:6379"   # service name, not localhost
       JWT_SECRET: "CATSRCARS"
       PORT: "8080"
     depends_on:
-      redis:
-        condition: service_healthy
+      - redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/ping"]
       interval: 15s
@@ -28,8 +26,9 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    command: ["redis-server", "--save", ""]   # no RDB saves if you want light-weight
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-server", "--version"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -38,17 +37,15 @@ services:
     image: prom/prometheus:latest
     container_name: prometheus
     ports:
-      - "9091:9090"
+      - "9090:9090"   # standard prometheus port
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - ./alert.rules.yml:/etc/prometheus/alert.rules.yml
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     depends_on:
-      app:
-        condition: service_healthy
-      node-exporter:
-        condition: service_started
+      - node-exporter
+    restart: unless-stopped
 
   node-exporter:
     image: prom/node-exporter:v1.7.0
@@ -79,8 +76,7 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
     depends_on:
-      prometheus:
-        condition: service_started
+      - prometheus
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
